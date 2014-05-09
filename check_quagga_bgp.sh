@@ -1,6 +1,6 @@
 #!/bin/bash
 #SvenVD 2014
-#Note this only has been tested on Centos6
+#Note this only has been tested on Centos6 with quagga-0.99.15-7
 
 #Initialization
 VERSION="0.2"
