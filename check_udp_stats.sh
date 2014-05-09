@@ -30,7 +30,7 @@ print_help() {
     print_version $PROGNAME $VERSION
     echo ""
     echo "$PROGNAME is a Nagios plugin to monitor the UDP packets"
-    echo "It calculates the average per packet count per minute of recevied, error recevied, unknown received and sent"
+    echo "It calculates the average per packet count per minute of received, error received, unknown received and sent"
     echo ""
     echo "$PROGNAME [-uw/--uwarning] [-uc/--ucritical][-ew/--ewarning] [-ec/--ecritical]"
     echo ""
@@ -141,7 +141,7 @@ echo "PREVPCKTRECERR=$PCKTRECERR" >> "$TEMPFILE"
 echo "PREVPCKTSENT=$PCKTSENT" >> "$TEMPFILE"
 
 
-#On first run previous vars will be empty, substitute by currente value so diff will be 0 for all counters
+#On first run previous vars will be empty, substitute by current value so diff will be 0 for all counters
 if [ -z $PREVTIMESTAMP ];then PREVTIMESTAMP=$TIMESTAMP;fi
 if [ -z $PREVPCKTREC ];then PREVPCKTREC=$PCKTREC;fi
 if [ -z $PREVPCKTRECERR ];then PREVPCKTRECERR=$PCKTRECERR;fi
