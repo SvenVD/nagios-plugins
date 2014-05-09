@@ -3,7 +3,7 @@
 #Note this only has been tested on Centos6 with quagga-0.99.15-7
 
 #Initialization
-VERSION="0.2"
+VERSION="0.3"
 PERCENTPEERS=0
 NR_ESTA_PEERS=0
 PERCPEERS=0
@@ -129,8 +129,8 @@ else
 fi
 
 
-
-
+####Substitute all : from PERFDATA output
+PERFDATA=$(echo "$PERFDATA" | sed 's/:/_/g')
 
 ####Generate nagiosoutput
 if  echo "$EXITCODES" | grep -q 2;then
