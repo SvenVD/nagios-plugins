@@ -2,8 +2,9 @@
 #SvenVD 2014
 #Note this only has been tested on Centos6 with quagga-0.99.15-7
 
+
 #Initialization
-VERSION="0.3"
+VERSION="0.4"
 PERCENTPEERS=0
 NR_ESTA_PEERS=0
 PERCPEERS=0
@@ -72,7 +73,19 @@ done
 if [ $IPPROT = v4 ];then
 	BGPDATA=$(sudo /usr/bin/vtysh -c 'show ip bgp summary' | head -n -2 | sed '1,6d' | egrep "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" )
 elif [ $IPPROT = v6 ];then
-	BGPDATA=$(sudo /usr/bin/vtysh -c 'show ipv6 bgp summary'  | head -n -2 | sed '1,6d' |  awk 'BEGIN{i=1}{line[i++]=$0}END{j=1; while (j<i) {print line[j] line[j+1]; j+=2}}')	
+	BGPDATA=$(sudo /usr/bin/vtysh -c 'show ipv6 bgp summary'  | head -n -2 | sed '1,6d' |  awk '
+	BEGIN{i=1}{line[i++]=$0}
+	END{j=1; 
+	  while (j<i){
+		split(line[j],array);
+		if ( array[2]=="" ) { 
+			print line[j] line[j+1]; j+=2
+		} else {
+			print line[j]; j+=1
+		}
+	  }
+    }'
+)		
 fi
 
 
@@ -82,8 +95,8 @@ while read line;do
   UPDOWN=$(echo $line | cut -d" " -f9)
   STATEPPFXRCD=$(echo $line | cut -d" " -f10)
   
-  #Needs to match 37w2d00h or 1d18h50m or 23:39:12
-  if [[ "$UPDOWN" =~ ^[0-9]{1,2}[a-z:][0-9]{1,2}[a-z:][0-9]{1,2}[a-z:]{0,1} ]];then
+  #Needs to match 37w2d00h or 1d18h50m or 23:39:12 and $STATEPPFXRCD is not a state but a count
+  if [[ "$UPDOWN" =~ ^[0-9]{1,2}[a-z:][0-9]{1,2}[a-z:][0-9]{1,2}[a-z:]{0,1} && "$STATEPPFXRCD" =~ ^[0-9]+$ ]];then
     #This means UPDOWN is in established state
     NR_ESTA_PEERS=$(( $NR_ESTA_PEERS +1 ))
     PERFDATA="$PERFDATA""$IP=$STATEPPFXRCD;$TW_STATEPPFXRCD;; "
