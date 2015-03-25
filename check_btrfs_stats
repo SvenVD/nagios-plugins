@@ -1,0 +1,41 @@
+#!/bin/bash
+# SvenVD 2015
+# Note this plugin has only been tested on CentOS 7
+# Note2 clear stats with btrfs device stats -z
+# Make sure your nagios user can run  sudo btrfs device stats /*
+
+
+while read line; do
+        BTRFS=$(echo "$line" | cut -d" " -f3;)
+        while read line; do
+                STAT=$(echo $line | cut -d" " -f1)
+                VALUE=$(echo $line | cut -d" " -f2)
+                if [ "$VALUE" -eq 0 ];then
+                        EXITCODES="$EXITCODES 0"
+                        PERFDATA="$PERFDATA""$STAT=$VALUE "
+                else
+                        MSGNAGIOS="$MSGNAGIOS""$STAT has $VALUE for $BTRFS:: "
+                        EXITCODES="$EXITCODES 2"
+                        PERFDATA="$PERFDATA""$STAT=$VALUE "
+                fi
+        done< <(sudo /usr/sbin/btrfs device stats "$BTRFS")
+
+done < <(mount -t btrfs)
+
+####Substitute all : and . from PERFDATA output
+        PERFDATA=$(echo "$PERFDATA" | sed 's/\[\///g' | sed 's/[]:./]/_/g')
+
+####Generate nagiosoutput
+if echo "$EXITCODES" | grep -q 2;then
+        echo "CRITICAL: $MSGNAGIOS|$PERFDATA"
+        exit 2;
+elif echo "$EXITCODES" | grep -q 1;then
+        echo "WARNING: $MSGNAGIOS|$PERFDATA"
+        exit 1;
+elif echo "$EXITCODES" | grep -q 3;then
+        echo "UNKNOWN: $MSGNAGIOS|$PERFDATA"
+        exit 3;
+else
+        echo "OK: $MSGNAGIOS|$PERFDATA"
+        exit 0
+fi
