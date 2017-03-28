@@ -30,7 +30,7 @@ print_help() {
     print_version $PROGNAME $VERSION
     echo ""
     echo "$PROGNAME is a Nagios plugin to monitor the UDP packets"
-    echo "It calculates the average per packet count per minute of received, error received, unknown received and sent"
+    echo "It calculates the average per packet count per minute of recevied, error recevied, unknown received and sent"
     echo ""
     echo "$PROGNAME [-uw/--uwarning] [-uc/--ucritical][-ew/--ewarning] [-ec/--ecritical]"
     echo ""
@@ -46,6 +46,30 @@ print_help() {
     echo "    The unit is packets/min"
     echo "  --ecritical|-ec)"
     echo "    Sets a critical level for packet receive errors. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --rwarning|-rw)"
+    echo "    Sets an upper warning level for packet received. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --rcritical|-rc)"
+    echo "    Sets an upper critical level for packet received. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --lrwarning|-lrw)"
+    echo "    Sets a lower warning level for packet received. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --lrcritical|-lrc)"
+    echo "    Sets a lower critical level for packet received. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --swarning|-sw)"
+    echo "    Sets an upper warning level for packet sent. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --scritical|-sc)"
+    echo "    Sets an upper critical level for packet sent. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --lswarning|-lsw)"
+    echo "    Sets a lower warning level for packet sent. Default is: 0"
+    echo "    The unit is packets/min"
+    echo "  --lscritical|-lsc)"
+    echo "    Sets a lower critical level for packet sent. Default is: 0"
     echo "    The unit is packets/min"
     exit 3
 }
@@ -65,16 +89,48 @@ while test -n "$1"; do
             shift
             ;;
         --ucritical|-uc)
-	    ucrit=$2  
+	    ucrit=$2
             shift
             ;;
         --ewarning|-ew)
-	    ewarn=$2   
+	    ewarn=$2
             shift
             ;;
         --ecritical|-ec)
 	    ecrit=$2
-	    
+
+            shift
+            ;;
+        --rwarning|-rw)
+	    rwarn=$2
+            shift
+            ;;
+        --rcritical|-rc)
+	    rcrit=$2
+            shift
+            ;;
+        --swarning|-sw)
+	    swarn=$2
+            shift
+            ;;
+        --scritical|-sc)
+	    scrit=$2
+            shift
+            ;;
+        --lrwarning|-lrw)
+	    lrwarn=$2
+            shift
+            ;;
+        --lrcritical|-lrc)
+	    lrcrit=$2
+            shift
+            ;;
+        --lswarning|-lsw)
+	    lswarn=$2
+            shift
+            ;;
+        --lscritical|-lsc)
+	    lscrit=$2
             shift
             ;;
         *)
@@ -90,23 +146,24 @@ if [ -z $uwarn ];then uwarn=0; fi
 if [ -z $ucrit ];then ucrit=0; fi
 if [ -z $ewarn ];then ewarn=0; fi
 if [ -z $ecrit ];then ecrit=0; fi
+if [ -z $rwarn ];then rwarn=0; fi
+if [ -z $rcrit ];then rcrit=0; fi
+if [ -z $swarn ];then swarn=0; fi
+if [ -z $scrit ];then scrit=0; fi
+if [ -z $lrwarn ];then lrwarn=0; fi
+if [ -z $lrcrit ];then lrcrit=0; fi
+if [ -z $lswarn ];then lswarn=0; fi
+if [ -z $lcrit ];then lscrit=0; fi
 
 chk_OS_version(){
 	#Since output of netstat can change between OS and versions, we only allow this plugin to run on tested OS
-	cat /etc/redhat-release | egrep -q "CentOS release 6.*|Fedora release 17 \(Beefy Miracle\)|CentOS release 5.*"
+	cat /etc/redhat-release | egrep -q "CentOS release 6.*|Fedora release 17 \(Beefy Miracle\)"
 	if [ $? -ne 0 ];then
 		echo "UNKNOWN: $(cat /etc/redhat-release) is not a supported OS"
 		exit 3
 	fi
 }
 
-
-if [ -n "$warn" -a -n "$crit" ];then
-	if [ ${warn} -gt ${crit} ];then
-	        echo "The warning level should be lower than the critical level. Please adjust them."
-	        exit 3
-	    fi
-fi
 
 chk_OS_version
 
@@ -141,7 +198,7 @@ echo "PREVPCKTRECERR=$PCKTRECERR" >> "$TEMPFILE"
 echo "PREVPCKTSENT=$PCKTSENT" >> "$TEMPFILE"
 
 
-#On first run previous vars will be empty, substitute by current value so diff will be 0 for all counters
+#On first run previous vars will be empty, substitute by currente value so diff will be 0 for all counters
 if [ -z $PREVTIMESTAMP ];then PREVTIMESTAMP=$TIMESTAMP;fi
 if [ -z $PREVPCKTREC ];then PREVPCKTREC=$PCKTREC;fi
 if [ -z $PREVPCKTRECERR ];then PREVPCKTRECERR=$PCKTRECERR;fi
@@ -187,7 +244,7 @@ if [ $TIMESTAMPDIFF -eq 0 ];then
 	AVGPCKTREC=0
 	AVGPCKTRECUNK=0
 	AVGPCKTRECERR=0
-	AVGPCKTSENT=0	
+	AVGPCKTSENT=0
 else
 	AVGPCKTREC=$(echo "scale=2; $PCKTRECDIFF/($TIMESTAMPDIFF/60) "| bc -l)
 	AVGPCKTRECUNK=$(echo "scale=2; $PCKTRECUNKDIFF/($TIMESTAMPDIFF/60) "| bc -l)
@@ -197,18 +254,101 @@ fi
 
 #Construct performance data output
 
-PERFDATA="'avg_udp_received pckts/min'=${AVGPCKTREC}c 'avg_udp_unknown_port pckts/min'=${AVGPCKTRECUNK}c;$uwarn;$ucrit 'avg_udp_errors pckts/min'=${AVGPCKTRECERR}c;$ewarn;$ecrit 'avg_udp_sent pckts/min'=${AVGPCKTSENT}c"
+PERFDATA="'avg_udp_received_pckts_min'=${AVGPCKTREC%%.*};$rwarn;$rcrit 'avg_udp_unknown_port_pckts_min'=${AVGPCKTRECUNK%%.*};$uwarn;$ucrit 'avg_udp_errors_pckts_min'=${AVGPCKTRECERR%%.*};$ewarn;$ecrit 'avg_udp_sent_pckts_min'=${AVGPCKTSENT%%.*};$swarn;$scrit"
 
 #Alerting logic (since bash can not handle floating point comparisions, we use bc for the purpose)
 
-if [ $(echo "$AVGPCKTRECUNK > $ucrit" | bc -l) -eq 1 -o $(echo "$AVGPCKTRECERR > $ecrit" | bc -l) -eq 1 ];then
-	echo "CRITICAL: $AVGPCKTRECERR pckts/min receive errors, $AVGPCKTRECUNK pckts/min unknown ports | $PERFDATA"
-	exit 2
-elif [ $(echo "$AVGPCKTRECUNK > $uwarn" | bc -l) -eq 1 -o $(echo "$AVGPCKTRECERR > $ewarn" | bc -l) -eq 1 ];then
-	echo "WARNING: $AVGPCKTRECERR pckts/min receive errors, $AVGPCKTRECUNK pckts/min unknown ports | $PERFDATA"
-	exit 1
+
+#Check upper unknown count unknown critical
+if [ $(echo "$AVGPCKTRECUNK > $ucrit" | bc -l) -eq 1 ];then
+    MSGNAGIOS="$MSGNAGIOS""$AVGPCKTRECUNK pckts/min unknown ports greater then threshold $ucrit:: "
+    EXITCODES="$EXITCODES"" 2"
 else
-	echo "OK: no udp packet errors or packets to unknown ports rate exceeded thresholds  | $PERFDATA"
-	exit 0
+    if [ $(echo "$AVGPCKTRECUNK > $uwarn" | bc -l) -eq 1 ];then
+    #Check upper unknown count unknown warning
+        MSGNAGIOS="$MSGNAGIOS""$AVGPCKTRECUNK pckts/min unknown ports greater then threshold $uwarn:: "
+        EXITCODES="$EXITCODES"" 1"
+    fi
 fi
 
+
+#Check upper error count errors critical
+if [ $(echo "$AVGPCKTRECERR > $ecrit" | bc -l) -eq 1 ];then
+    MSGNAGIOS="$MSGNAGIOS""$AVGPCKTRECERR pckts/min error greater then threshold $ecrit:: "
+    EXITCODES="$EXITCODES"" 2"
+#Check upper error count errors warning
+else
+    if [ $(echo "$AVGPCKTRECERR > $ewarn" | bc -l) -eq 1 ];then
+        MSGNAGIOS="$MSGNAGIOS""$AVGPCKTRECERR pckts/min error greater then threshold $ewarn:: "
+        EXITCODES="$EXITCODES"" 1"
+    fi
+fi
+
+
+#Check upper count received critical
+if [ $(echo "$AVGPCKTREC > $rcrit" | bc -l) -eq 1 ];then
+    MSGNAGIOS="$MSGNAGIOS""$AVGPCKTREC pckts/min received greater then threshold $rcrit:: "
+    EXITCODES="$EXITCODES"" 2"
+#Check upper count received warning
+else
+    if [ $(echo "$AVGPCKTREC > $rwarn" | bc -l) -eq 1 ];then
+        MSGNAGIOS="$MSGNAGIOS""$AVGPCKTREC pckts/min received greater then threshold $rwarn:: "
+        EXITCODES="$EXITCODES"" 1"
+    fi
+fi
+
+
+
+#Check upper count sent critical
+if [ $(echo "$AVGPCKTSENT > $scrit" | bc -l) -eq 1 ];then
+    MSGNAGIOS="$MSGNAGIOS""$AVGPCKTSENT pckts/min sent greater then threshold $scrit:: "
+    EXITCODES="$EXITCODES"" 2"
+#Check upper count sent warning
+else
+    if [ $(echo "$AVGPCKTSENT > $swarn" | bc -l) -eq 1 ];then
+        MSGNAGIOS="$MSGNAGIOS""$AVGPCKTSENT pckts/min sent greater then threshold $swarn:: "
+        EXITCODES="$EXITCODES"" 1"
+    fi
+fi
+
+
+##
+
+#Check lower count received critical
+if [ $(echo "$AVGPCKTREC < $lrcrit" | bc -l) -eq 1 ];then
+    MSGNAGIOS="$MSGNAGIOS""$AVGPCKTREC pckts/min received lower then threshold $lrcrit:: "
+    EXITCODES="$EXITCODES"" 2"
+#Check lower count received warning
+else
+    if [ $(echo "$AVGPCKTREC < $lrwarn" | bc -l) -eq 1 ];then
+        MSGNAGIOS="$MSGNAGIOS""$AVGPCKTREC pckts/min received lower then threshold $lrwarn:: "
+        EXITCODES="$EXITCODES"" 1"
+    fi
+fi
+
+#Check lower count sent critical
+if [ $(echo "$AVGPCKTSENT < $lscrit" | bc -l) -eq 1 ];then
+    MSGNAGIOS="$MSGNAGIOS""$AVGPCKTSENT pckts/min sent lower then threshold $lscrit:: "
+    EXITCODES="$EXITCODES"" 2"
+#Check lower count sent warning
+else
+    if [ $(echo "$AVGPCKTSENT < $lswarn" | bc -l) -eq 1 ];then
+        MSGNAGIOS="$MSGNAGIOS""$AVGPCKTSENT pckts/min sent lower then threshold $lswarn:: "
+        EXITCODES="$EXITCODES"" 1"
+    fi
+fi
+
+####Generate nagiosoutput
+if  echo "$EXITCODES" | grep -q 2;then
+	echo "CRITICAL: $MSGNAGIOS|$PERFDATA"
+	exit 2;
+elif  echo "$EXITCODES" | grep -q 1;then
+	echo "WARNING: $MSGNAGIOS|$PERFDATA"
+	exit 1;
+elif  echo "$EXITCODES" | grep -q 3;then
+	echo "UNKNOWN: $MSGNAGIOS|$PERFDATA"
+	exit 3;
+else
+	echo "OK: everything within thresholds  | $PERFDATA"
+	exit 0
+fi
