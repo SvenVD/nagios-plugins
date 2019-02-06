@@ -119,7 +119,7 @@ while read line;do
   if [[ "$UPDOWN" =~ ^[0-9]{1,2}[a-z:][0-9]{1,2}[a-z:][0-9]{1,2}[a-z:]{0,1} && "$STATEPPFXRCD" =~ ^[0-9]+$ ]];then
     #This means UPDOWN is in established state
     NR_ESTA_PEERS=$(( $NR_ESTA_PEERS +1 ))
-    PERFDATA="$PERFDATA""$IP=$STATEPPFXRCD;$TW_STATEPPFXRCD;TW_STATEPPFXRCD_CRIT;; "
+    PERFDATA="$PERFDATA""$IP=$STATEPPFXRCD;$TW_STATEPPFXRCD;$TW_STATEPPFXRCD_CRIT;; "
     # This also means we got some prefixes, compare them with threshold
     if [ $STATEPPFXRCD -lt $TW_STATEPPFXRCD_CRIT ];then
 	PEERSPREFIXERR="$PEERSPREFIXERR""$IP->$TW_STATEPPFXRCD_CRIT"
